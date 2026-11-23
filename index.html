@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Homework Use Self-Check</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --navy:#1f3f77; --blue:#2f5fa3; --lightblue:#3f7cc4;
+    --bg:#f4f7fc; --card:#fff; --ink:#22304a; --sub:#42536f;
+    --line:#e3ebf6;
+  }
+  body{
+    font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--ink); min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px 16px;
+    background-image:
+      radial-gradient(circle at 10% 10%, rgba(90,140,220,.10) 0, transparent 260px),
+      radial-gradient(circle at 90% 90%, rgba(90,140,220,.10) 0, transparent 260px);
+  }
+
+  /* ---------- entry modal ---------- */
+  .modal-mask{
+    position:fixed; inset:0; background:rgba(20,35,60,.55);
+    backdrop-filter:blur(4px);
+    display:flex; align-items:center; justify-content:center;
+    z-index:50; padding:18px;
+    transition:opacity .35s;
+  }
+  .modal-mask.hide{ opacity:0; pointer-events:none; }
+  .modal{
+    background:#fff; border-radius:22px; max-width:560px; width:100%;
+    overflow:hidden; box-shadow:0 24px 60px rgba(20,35,60,.35);
+    animation:pop .4s cubic-bezier(.2,1.2,.4,1);
+    max-height:90vh; overflow-y:auto;
+  }
+  @keyframes pop{ from{ transform:scale(.9) translateY(20px); opacity:0;} to{ transform:none; opacity:1;} }
+  .modal-head{
+    background:linear-gradient(135deg,var(--navy),var(--lightblue));
+    color:#fff; padding:26px 28px 22px; position:relative; overflow:hidden;
+  }
+  .modal-head::after{ content:""; position:absolute; right:-30px; top:-30px; width:150px; height:150px; border-radius:50%; background:rgba(255,255,255,.08); }
+  .modal-head h1{ font-size:22px; }
+  .modal-head p{ font-size:13px; opacity:.9; margin-top:6px; }
+  .modal-body{ padding:22px 28px 26px; }
+  .modal-body .rule{ display:flex; gap:12px; margin-bottom:14px; font-size:13.5px; line-height:1.55; color:var(--sub); }
+  .modal-body .rule .ic{ font-size:20px; }
+  .start-btn{
+    width:100%; margin-top:8px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--navy),var(--lightblue));
+    color:#fff; font-size:16px; font-weight:700; padding:14px;
+    border-radius:14px; transition:transform .15s, box-shadow .15s;
+    font-family:inherit;
+  }
+  .start-btn:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(31,63,119,.3); }
+
+  /* ---------- quiz card ---------- */
+  .stage{ width:100%; max-width:720px; }
+  .card{
+    background:var(--card); border-radius:20px; padding:26px 30px 24px;
+    box-shadow:0 6px 24px rgba(31,63,119,.10); border:1px solid var(--line);
+  }
+  .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:8px; flex-wrap:wrap; }
+  .topbar .brand{ font-weight:700; color:var(--navy); font-size:15px; }
+  .topbar .count{ font-size:13px; color:var(--sub); background:#eaf1fb; padding:4px 12px; border-radius:999px; }
+  .progress{ height:8px; background:#e6edf7; border-radius:99px; overflow:hidden; margin-bottom:22px; }
+  .progress i{ display:block; height:100%; width:0; border-radius:99px;
+    background:linear-gradient(90deg,var(--blue),var(--lightblue)); transition:width .35s; }
+
+  .sec-tag{ font-size:12px; font-weight:700; letter-spacing:.5px; color:var(--lightblue); text-transform:uppercase; margin-bottom:6px; }
+  .qtext{ font-size:19px; font-weight:700; line-height:1.45; margin-bottom:20px; }
+  .opt{
+    display:flex; gap:12px; align-items:flex-start; width:100%; text-align:left;
+    background:#f7fafd; border:2px solid var(--line); border-radius:14px;
+    padding:13px 16px; margin-bottom:10px; cursor:pointer; font-size:14.5px;
+    color:var(--sub); line-height:1.5; transition:all .15s; font-family:inherit;
+  }
+  .opt .L{
+    flex:none; width:26px; height:26px; border-radius:8px; background:#e3ecf8;
+    color:var(--blue); font-weight:700; display:flex; align-items:center; justify-content:center;
+    transition:all .15s;
+  }
+  .opt:hover{ border-color:#b9cfee; transform:translateX(4px); }
+  .opt.sel{ border-color:var(--blue); background:#eef4fc; color:var(--ink); }
+  .opt.sel .L{ background:var(--blue); color:#fff; }
+
+  .nav{ display:flex; gap:10px; margin-top:18px; }
+  .nav button{
+    flex:1; padding:12px; border-radius:12px; font-size:14.5px; font-weight:600;
+    cursor:pointer; border:2px solid var(--line); background:#fff; color:var(--sub);
+    transition:all .15s; font-family:inherit;
+  }
+  .nav button:hover:not(:disabled){ border-color:#b9cfee; }
+  .nav button:disabled{ opacity:.4; cursor:not-allowed; }
+  .nav .primary{ background:linear-gradient(135deg,var(--navy),var(--lightblue)); color:#fff; border:none; }
+  .nav .primary:hover:not(:disabled){ box-shadow:0 6px 16px rgba(31,63,119,.28); }
+
+  .dots{ display:flex; gap:5px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
+  .dot{
+    width:24px; height:24px; border-radius:7px; border:1.5px solid var(--line);
+    background:#fff; color:#9fb0c8; font-size:11px; font-weight:700; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:all .12s;
+    font-family:inherit; padding:0;
+  }
+  .dot:hover{ border-color:#b9cfee; }
+  .dot.done{ background:#e8f0fb; border-color:#b9cfee; color:var(--blue); }
+  .dot.cur{ background:var(--navy); border-color:var(--navy); color:#fff; }
+
+  /* ---------- result ---------- */
+  .result{ text-align:center; }
+  .score-ring{ width:170px; height:170px; margin:6px auto 16px; position:relative; }
+  .score-ring svg{ transform:rotate(-90deg); }
+  .score-ring .val{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+  }
+  .score-ring .val b{ font-size:42px; color:var(--navy); }
+  .score-ring .val span{ font-size:12px; color:var(--sub); }
+  .level{ display:inline-block; font-size:15px; font-weight:700; padding:6px 18px; border-radius:999px; margin-bottom:14px; }
+  .level.l0{ background:#e5f6ec; color:#1e7a45; }
+  .level.l1{ background:#e8f2fd; color:#1d5fb8; }
+  .level.l2{ background:#fdf3e0; color:#a8720b; }
+  .level.l3{ background:#fdeee0; color:#b85a1d; }
+  .level.l4{ background:#fde5e5; color:#b82a2a; }
+  .advice{ font-size:14px; line-height:1.7; color:var(--sub); background:#f7fafd;
+    border:1px solid var(--line); border-radius:14px; padding:14px 18px; text-align:left; margin-bottom:16px; }
+  .focus{ font-size:13px; color:#6b5a2e; background:#fff7e8; border:1px solid #f0dfb8;
+    border-radius:12px; padding:11px 15px; text-align:left; margin-bottom:18px; }
+  .sec-break{ text-align:left; margin-bottom:18px; }
+  .sec-break h3{ font-size:13px; color:var(--navy); margin-bottom:8px; }
+  .bar-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:11.5px; color:var(--sub); }
+  .bar-row .nm{ flex:none; width:118px; }
+  .bar-row .tr{ flex:1; height:8px; background:#e6edf7; border-radius:99px; overflow:hidden; }
+  .bar-row .tr i{ display:block; height:100%; background:linear-gradient(90deg,var(--blue),var(--lightblue)); border-radius:99px; }
+  .bar-row .sc{ flex:none; width:56px; text-align:right; font-weight:700; color:var(--navy); }
+  .fade{ animation:fadein .3s; }
+  @keyframes fadein{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:none;} }
+  @media (max-width:560px){ .card{ padding:20px 18px; } .qtext{ font-size:17px; } .bar-row .nm{ width:96px; } }
+</style>
+</head>
+<body>
+
+<!-- ===== Entry modal ===== -->
+<div class="modal-mask" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h1>🤖 AI Homework Use Self-Check</h1>
+      <p>20 single-choice questions · about 3 minutes · instant score report</p>
+    </div>
+    <div class="modal-body">
+      <div class="rule"><span class="ic">📝</span><span>Answer based on your <b>actual situation over the past month</b> when doing homework.</span></div>
+      <div class="rule"><span class="ic">☝️</span><span>Choose <b>one</b> option per question. You can jump back and change any answer at any time.</span></div>
+      <div class="rule"><span class="ic">🔢</span><span>Scoring: <b>A = 0 · B = 1 · C = 2 · D = 3</b>. Total 0–60, mapped to five dependence levels.</span></div>
+      <div class="rule"><span class="ic">🔒</span><span>Everything runs locally in your browser. Nothing is uploaded or stored.</span></div>
+      <button class="start-btn" id="startBtn">Start the Checklist →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Quiz stage ===== -->
+<div class="stage">
+  <div class="card" id="card"></div>
+</div>
+
+<script>
+const QUESTIONS = [
+ {sec:"I. Frequency and Timing of Use", q:"1. Before starting homework, do you usually think through the approach yourself first?",
+  o:["Always think independently first, then decide whether to use AI","Mostly think first; use AI only when stuck","Often open AI first to see what it says","Basically let AI give the answer/approach directly"]},
+ {sec:"I. Frequency and Timing of Use", q:"2. How often do you use AI to complete homework?",
+  o:["Rarely or never","1–2 times per week","Almost every day","For every assignment"]},
+ {sec:"I. Frequency and Timing of Use", q:"3. When you encounter a slightly difficult problem, your first reaction is to:",
+  o:["Try multiple methods myself first","Check books/notes first, then consider AI","Ask AI directly","Have AI produce a complete solution directly"]},
+ {sec:"I. Frequency and Timing of Use", q:"4. At what stage of homework do you usually use AI?",
+  o:["Basically never","After finishing, to check/compare","When stuck, for hints","From the start, to generate the main content"]},
+ {sec:"II. How You Use It and Depth of Use", q:"5. What do you most often ask AI to do?",
+  o:["Explain concepts, inspire thinking","Check errors, provide feedback","Give solution steps for me to imitate","Directly generate submittable answers"]},
+ {sec:"II. How You Use It and Depth of Use", q:"6. After receiving AI's response, you usually:",
+  o:["Understand it sentence by sentence and rewrite in my own words","Verify and partially revise","Make small edits and use it","Submit it basically as is"]},
+ {sec:"II. How You Use It and Depth of Use", q:"7. Can you restate AI's solution approach independently, without looking at AI?",
+  o:["Mostly yes","Yes for most","Only for a few","Basically no"]},
+ {sec:"II. How You Use It and Depth of Use", q:"8. When using AI, do you ask follow-up “why” questions?",
+  o:["Often ask and verify","Sometimes ask","Rarely ask","Never ask; only want the result"]},
+ {sec:"II. How You Use It and Depth of Use", q:"9. Do you compare AI-generated content with textbooks/class notes?",
+  o:["Always compare","Often compare","Occasionally compare","Almost never compare"]},
+ {sec:"III. Independence and Substitutability", q:"10. If AI were banned for homework starting tomorrow, you would:",
+  o:["Be barely affected; complete as usual","Struggle somewhat but manage","Struggle noticeably; grades may drop","Be almost unable to complete homework"]},
+ {sec:"III. Independence and Substitutability", q:"11. Without AI, the time you need to complete similar homework would:",
+  o:["Stay basically the same","Increase somewhat","Increase a lot","Be impossible to complete"]},
+ {sec:"III. Independence and Substitutability", q:"12. Have you experienced “not wanting to start writing unless AI gives an answer”?",
+  o:["Never","Occasionally","Often","Almost every time"]},
+ {sec:"III. Independence and Substitutability", q:"13. Roughly what proportion of homework can you complete independently?",
+  o:["Over 80% on my own","60%–80% on my own","40%–60% on my own","Under 40% on my own"]},
+ {sec:"III. Independence and Substitutability", q:"14. Compared with homework, your performance on exams or closed-book quizzes is:",
+  o:["Basically the same","Slightly worse","Noticeably worse","A big gap; homework relies on AI"]},
+ {sec:"IV. Attitude and Reflection", q:"15. Your main motivation for using AI is:",
+  o:["Learning and understanding, improving ability","Improving efficiency, saving time","Completing homework, avoiding criticism","Not wanting to think; just handing it in"]},
+ {sec:"IV. Attitude and Reflection", q:"16. Do you actively record/summarize problems AI helped you solve?",
+  o:["Often organize into notes","Sometimes organize","Rarely organize","Never organize"]},
+ {sec:"IV. Attitude and Reflection", q:"17. When AI's answer conflicts with the teacher's explanation, you:",
+  o:["Actively analyze which is correct","Ask the teacher or classmates","Go with AI","Don't care; as long as it's submitted"]},
+ {sec:"IV. Attitude and Reflection", q:"18. How do you view “using AI for homework”?",
+  o:["A learning aid that requires independent thinking as a prerequisite","An efficiency tool, but beware of dependence","Convenient is enough; don't think too much","Use it whenever possible; thinking isn't the point"]},
+ {sec:"IV. Attitude and Reflection", q:"19. Have you ever been told by a teacher that your work “doesn't sound like you wrote it” because of AI use?",
+  o:["Never","Occasionally","A few times","Often"]},
+ {sec:"IV. Attitude and Reflection", q:"20. Your self-assessment of “AI dependence” is:",
+  o:["Not dependent at all","Slightly dependent, controllable","Fairly dependent","Highly dependent, hard to leave"]}
+];
+
+const LEVELS = [
+ {min:0,  max:10, cls:"l0", name:"Low dependence",             tip:"You can complete homework independently; AI mainly serves as an aid. Maintain your independent thinking habits — keep thinking first and asking later."},
+ {min:11, max:20, cls:"l1", name:"Mild dependence",            tip:"You occasionally use AI, but your independence is still acceptable. Limit when you use it; think first, ask later."},
+ {min:21, max:30, cls:"l2", name:"Moderate dependence",        tip:"AI is deeply involved in your homework. Increase “AI-free periods”; after getting an answer, you must restate and rewrite it in your own words."},
+ {min:31, max:40, cls:"l3", name:"Relatively high dependence", tip:"Your ability to complete work independently is affected. Do the whole assignment independently first, then compare with AI; record your motivation each time."},
+ {min:41, max:60, cls:"l4", name:"High dependence",            tip:"It is clearly difficult for you to complete homework without AI. Talk with teachers or parents, set usage boundaries, and gradually rebuild independent problem-solving training."}
+];
+
+// section index ranges (inclusive start, exclusive end) and max scores — Q1-4 / Q5-9 / Q10-14 / Q15-20
+const SECTIONS = [
+ {nm:"Frequency & Timing", from:0,  to:4 },
+ {nm:"Depth of Use",       from:4,  to:9 },
+ {nm:"Independence",       from:9,  to:14},
+ {nm:"Attitude",           from:14, to:20}
+];
+
+const answers = new Array(20).fill(null);
+let cur = 0;
+const card = document.getElementById('card');
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('modal').classList.add('hide');
+  render();
+});
+
+function answeredCount(){ return answers.filter(a => a !== null).length; }
+
+function render(){
+  const q = QUESTIONS[cur];
+  const done = answeredCount();
+  const allDone = done === 20;
+
+  let dots = '';
+  for (let i = 0; i < 20; i++){
+    const cls = i === cur ? 'cur' : (answers[i] !== null ? 'done' : '');
+    dots += `<button class="dot ${cls}" data-go="${i}">${i+1}</button>`;
+  }
+
+  card.innerHTML = `
+    <div class="fade">
+      <div class="topbar">
+        <div class="brand">🤖 AI Use Self-Check</div>
+        <div class="count">Question ${cur+1} / 20 · ${done} answered</div>
+      </div>
+      <div class="progress"><i style="width:${(done/20)*100}%"></i></div>
+      <div class="sec-tag">${q.sec}</div>
+      <div class="qtext">${q.q}</div>
+      ${q.o.map((t,i)=>`
+        <button class="opt ${answers[cur]===i?'sel':''}" data-i="${i}">
+          <span class="L">${'ABCD'[i]}</span><span>${t}</span>
+        </button>`).join('')}
+      <div class="nav">
+        <button id="prevBtn" ${cur===0?'disabled':''}>← Previous</button>
+        <button id="nextBtn" class="primary" ${answers[cur]===null ? 'disabled' : ''}>
+          ${cur===19 ? 'See My Result 📊' : 'Next Page →'}
+        </button>
+      </div>
+      <div class="dots">${dots}</div>
+    </div>`;
+
+  // option click: select / change freely, then auto-advance only for a fresh answer
+  card.querySelectorAll('.opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = +btn.dataset.i;
+      const isNew = answers[cur] === null;
+      answers[cur] = i;
+      if (isNew && cur < 19 && answeredCount() < 20){
+        cur++;
+        render();
+      } else {
+        render();
+      }
+    });
+  });
+
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    if (cur > 0){ cur--; render(); }
+  });
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    if (answeredCount() === 20){ showResult(); return; }
+    if (answers[cur] !== null){
+      if (cur < 19){ cur++; render(); }
+      else { const firstNull = answers.indexOf(null); if (firstNull >= 0){ cur = firstNull; render(); } }
+    }
+  });
+  card.querySelectorAll('.dot').forEach(d => {
+    d.addEventListener('click', () => { cur = +d.dataset.go; render(); });
+  });
+}
+
+function showResult(){
+  const total = answers.reduce((s,a) => s + a, 0);
+  const lv = LEVELS.find(l => total >= l.min && total <= l.max);
+  const C = 2 * Math.PI * 72;
+  const frac = total / 60;
+
+  const secRows = SECTIONS.map(s => {
+    const items = answers.slice(s.from, s.to);
+    const sc = items.reduce((a,b) => a + b, 0);
+    const mx = (s.to - s.from) * 3;
+    return `<div class="bar-row"><span class="nm">${s.nm}</span>
+      <span class="tr"><i style="width:${(sc/mx)*100}%"></i></span>
+      <span class="sc">${sc} / ${mx}</span></div>`;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="fade result">
+      <div class="topbar"><div class="brand">🤖 AI Use Self-Check</div><div class="count">Result</div></div>
+      <div class="progress"><i style="width:100%"></i></div>
+      <div class="score-ring">
+        <svg width="170" height="170">
+          <circle cx="85" cy="85" r="72" fill="none" stroke="#e6edf7" stroke-width="14"/>
+          <circle cx="85" cy="85" r="72" fill="none" stroke="url(#g)" stroke-width="14"
+                  stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-frac)).toFixed(1)}"/>
+          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#2f5fa3"/><stop offset="1" stop-color="#3f7cc4"/>
+          </linearGradient></defs>
+        </svg>
+        <div class="val"><b>${total}</b><span>out of 60</span></div>
+      </div>
+      <div class="level ${lv.cls}">${lv.name} (${lv.min}–${lv.max})</div>
+      <div class="advice">${lv.tip}</div>
+      <div class="sec-break">
+        <h3>📊 Section breakdown</h3>
+        ${secRows}
+      </div>
+      <div class="focus">💡 <b>Usage suggestion:</b> self-check once a month and watch Questions <b>10, 11, 12 and 14</b> most closely — they best reflect whether you can still work independently without AI.</div>
+      <div class="nav">
+        <button id="reviewBtn">← Review my answers</button>
+        <button id="restartBtn" class="primary">Restart ↻</button>
+      </div>
+    </div>`;
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    answers.fill(null); cur = 0; render();
+  });
+  document.getElementById('reviewBtn').addEventListener('click', () => {
+    cur = 0; render();
+  });
+}
+
+render();
+</script>
+</body>
+</html>
